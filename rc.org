@@ -2,6 +2,7 @@
 #+AUTHOR: Tariq Kamal <github.t-boy@xoxy.net>
 #+STARTUP: hidestars indent logdone
 #+TODO: FIX-ME PLAN-ME FINISH-ME | CHECK-ME DONE 
+#+PROPERTIES: tangle rc.lua
 
 The main startup file for all the settings for the awesome desktop manager.
 
@@ -17,21 +18,26 @@ This file was built using:
 * PLAN-ME Things to do [0/4]
 Items to plan for, items to complete.
 
-- [ ] Orgify everything.
-  - [ ] Build the basic framework.
-  - [ ] /Properly/ document the file, not mindlessly mimic the comments.
+- [-] Orgify everything.
+  - [X] Build the basic framework.
+  - [-] /Properly/ document the file, not mindlessly mimic the comments.
+    - [X] First segment :: Variable declarations and initial setup and startup.
+    - [ ] Second segment :: Widgets and menu items and interface items.
 - [ ] Put this in the org-agenda.
-- [ ] Figure out a workflow to output this as clean lua.
-  + Most likely approach would be using org-babel-tangle.
+- [-] Figure out a workflow to output this as clean lua.
+  - [X] Configure the in-buffer settings to point to rc.lua
+  - [ ] Run the tangle command successfully.
+  - [ ] Test out the resulting awesome configuration.
+  - [ ] Start adding things in and reorganizing.
 - [ ] Customize
-  + Widgets
-    * System tray ones
-    * Desktop ones
-  + Startup applications.
-  + Wallpaper changing, using either:
-    * [[http://www.reddit.com/][reddit]]'s earth-porn subreddit.
-    * [[http://www.panorimio.com][panorimio]], preferably with a separate file to describe rects of interest.
-    * JSON is involved in some way.
+  - Widgets
+    - System tray ones
+    - Desktop ones
+  - Startup applications.
+  - Wallpaper changing, using either:
+    - [[http://www.reddit.com/][reddit]]'s earth-porn subreddit.
+    - [[http://www.panorimio.com][panorimio]], preferably with a separate file to describe rects of interest.
+    - JSON is involved in some way.
 
 * The awesome settings.
 
@@ -41,88 +47,111 @@ This section contains the actual settings.
 
 Begin by loading the files required by awesome to function properly.
 
+The following modules are loaded:
+
+- awful :: not part of the core library, and yet required for some reason for awesome to function. Will find out, but later.
+  + awful.autofocus ::
+  + awful.rules :: 
+- beautiful :: The default theme library. Moves all the custom code involving awesome's look and feel into a separate file. The locations of the theme files should be at [[file:/usr/share/awesome/themes/][awesome themes shared directory, at least for this system.]]
+- naughty :: The notifications library.
+
 #+begin_src lua
--- Standard awesome
-require("awful")
-require("awful.autofocus")
-require("awful.rules")
--- Theme handling library
-require("beautiful")
--- Notification library
-require("naughty")
+  require("awful")
+  require("awful.autofocus")
+  require("awful.rules")
+  require("beautiful")
+  require("naughty")
 #+end_src
 
 And then load external files needed to e.g. populate menu options etc.
 
+I believe at this point the debian menu entries are automatically generated, apparently, so there's really no point in including them here, since the system mirrors the changes from its own internal processes. 
+
+For more information, visit the [[file:/usr/share/doc/menu/html/index.html][relevant documentation on the local system]] for more info.
+
 #+begin_src lua
--- Load Debian menu entries
-require("debian.menu")
+  require("debian.menu")
 #+end_src
 
 ** The Startup Process
 
 *** Recovery from error.
 
-If things go wrong, make it right:
+This section apparently manages the awesome window manager in the event there is an error in the awesome configuration. I've never seen it work at all, though, since fucking up the configuration just means that when I login, awesome just dumps me back to the login screen, and I have to use the console to salvage the configuration file.
+
+The original docstring indicates that there is a fallback configuration that awesome is supposed to execute in the event of startup failure. Not sure where that part is, in this code snippet. From all I can see it just executes a notification via naughty, and then... that's it. Weird.
 
 #+begin_src lua
--- {{{ Error handling
--- Check if awesome encountered an error during startup and fell back to
--- another config (This code will only ever execute for the fallback config)
-if awesome.startup_errors then
-    naughty.notify({ preset = naughty.config.presets.critical,
-                     title = "Oops, there were errors during startup!",
-                     text = awesome.startup_errors })
-end
+  if awesome.startup_errors then
+      naughty.notify({ preset = naughty.config.presets.critical,
+                       title = "Oops, there were errors during startup!",
+                       text = awesome.startup_errors })
+  end
+#+end_src
 
--- Handle runtime errors after startup
-do
-    local in_error = false
-    awesome.add_signal("debug::error", function (err)
-        -- Make sure we don't go into an endless error loop
-        if in_error then return end
-        in_error = true
+This snippet supposedly handles problems that occur when your configuration is correct, but awesome has encountered some run-time errors after starting up. The code for this one is even more esoteric, and I've yet to figure it out. From all I can see, it does something with signals, and then displays an error notification.
 
-        naughty.notify({ preset = naughty.config.presets.critical,
-                         title = "Oops, an error happened!",
-                         text = err })
-        in_error = false
-    end)
-end
--- }}}
+#+begin_src lua
+  do
+      local in_error = false
+      awesome.add_signal("debug::error", function (err)
+          -- Make sure we don't go into an endless error loop
+          if in_error then return end
+          in_error = true
+  
+          naughty.notify({ preset = naughty.config.presets.critical,
+                           title = "Oops, an error happened!",
+                           text = err })
+          in_error = false
+      end)
+  end
 #+end_src
 
 *** Application startup.
 
 Applications that need to run, like the compositor and other shell background daemons, can be summoned here by `awful.util.spawn_with_shell()`.
 
+Right now, the following applications start up when awesome starts up:
+
+- Unagi, a window compositor that ensures that both the emacs window and the uxrvt window remain transparent.
+
 #+begin_src lua
 awful.util.spawn_with_shell("unagi &")
 #+end_src
 
-*** FIX-ME Variable declarations.
+*** COMMENT FINISH-ME Variable declarations.
 
 Once that's done, define variables:
 
+This bit defines the theme file for loading. Right now it's at zenburn. The thought does cross my mind, though, that at some point the wallpaper will need changing. Must I /really/ muck around with the specific theme file? That feels kind of silly.
+
 #+begin_src lua
-
--- {{{ Variable definitions
--- Themes define colours, icons, and wallpapers
 beautiful.init("/usr/share/awesome/themes/zenburn/theme.lua")
+#+end_src
 
--- This is used later as the default terminal and editor to run.
+The first two lines of this are self-evident: this is where we define my preferred xterm application (in this case, rxvt-unicode), and the default editor (likely nano; should really consider changing it to emacs). Right now it's just variables, but it will get called later on.
+
+That third line is a little mystifying, especially since I'm not familiar with the .. operator. Presumably it's string concatenation?
+
+#+begin_src lua
 terminal = "urxvt"
 editor = os.getenv("EDITOR") or "editor"
 editor_cmd = terminal .. " -e " .. editor
+#+end_src
 
--- Default modkey.
--- Usually, Mod4 is the key with a logo between Control and Alt.
--- If you do not like this or do not have such a key,
--- I suggest you to remap Mod4 to another key using xmodmap or other tools.
--- However, you can use another modifier like Mod1, but it may interact with others.
+This part defines modkey as the Windows key at this point. Like the previous section, it's still mostly variable assignments -- all the stuff gets run later on.
+
+The devs recommend you keep it to Mod4, by the way, and if it bugs you, use xmodmap, not manually define it here. There may be clashes and weirdness abound, presumably because awesome can't really figure out what CTRL + CTRL + key is. Not that I can blame them.
+
+#+begin_src lua
 modkey = "Mod4"
+#+end_src
 
--- Table of layouts to cover with awful.layout.inc, order matters.
+The table of layouts is laid-out. Remember that lua's numbering scheme for tables is 1s-based, not 0s-based, which will throw off people and result in a hilarious number of off-by-one errors.
+
+For netbooks with tiny screens like the device I'm writing in, stick to awful.layout.suit.max.
+
+#+begin_src lua
 layouts =
 {
     awful.layout.suit.floating,
@@ -138,16 +167,20 @@ layouts =
     awful.layout.suit.max.fullscreen,
     awful.layout.suit.magnifier
 }
--- }}}
+#+end_src
 
--- {{{ Tags
--- Define a tag table which hold all screen tags.
-tags = {}
-for s = 1, screen.count() do
-    -- Each screen has its own tag table.
-    tags[s] = awful.tag({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }, s, layouts[9])
-end
--- }}}
+Define tags here. You do it by continuously iterating from all active screens (assumption: screen.count() counts the number of iRL screens, not virual ones.
+
+I tried to follow the awesome Right Way™ of doing things, but it kept crashing my window manager. Might as well do it the dumb way, and define the tags manually, like an idiot. Works well, apparently, thus validating the need for idiocy, once in a while.
+
+layouts[9] should refer to awful.layout.suit.max. So it goes.
+
+#+begin_src lua
+  tags = {}
+  for s = 1, screen.count() do
+      -- Each screen has its own tag table.
+      tags[s] = awful.tag({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }, s, layouts[9])
+  end
 #+end_src
 
 *** Interface elements.
@@ -462,7 +495,6 @@ awful.rules.rules = {
 }
 -- }}}
 #+end_src
-
 
 **** FIX-ME Other things.
 
