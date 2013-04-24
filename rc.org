@@ -251,16 +251,33 @@ mysystray = widget({ type = "systray" })
 
 ***** FIX-ME Widget invocations
 
-Then you find places to put them in.
+****** Define the wibox widgets and other things.
 
-This particular section /really/ needs better commentary than what I can provide right now.
+The first part of this appears to be more definitions, but it appears to define the following elements that need to appear in every screen:
+
+- One wibox
+- One prompt box
+- A layoutbox, which shows what the current layout is.
+- A tags list.
+- A tasks list (moved from just before the tasks lists buttons were defined).
 
 #+begin_src lua
--- Create a wibox for each screen and add it
 mywibox = {}
 mypromptbox = {}
 mylayoutbox = {}
 mytaglist = {}
+mytasklist = {}
+#+end_src
+
+****** How buttons interact with the wibox items
+
+The next section appears to define how items in the wibox react to being clicked on with mouse buttons.
+
+******* FIX-ME The Tags List
+
+The tags list has an element called buttons, which, I believe, define what each mouse button does when you click on the tag with that specific mouse button. Only =button1= (i.e. the left mouse button) and =button1+Mod4= are really worth anything at this point, since my mouse doesn't have button 3, 4 or 5 (I'm using a trackpad, anyway).
+
+#+begin_src lua
 mytaglist.buttons = awful.util.table.join(
                     awful.button({ }, 1, awful.tag.viewonly),
                     awful.button({ modkey }, 1, awful.client.movetotag),
@@ -269,7 +286,15 @@ mytaglist.buttons = awful.util.table.join(
                     awful.button({ }, 4, awful.tag.viewnext),
                     awful.button({ }, 5, awful.tag.viewprev)
                     )
-mytasklist = {}
+#+end_src
+
+******* FIX-ME The tasks lists
+
+The same goes for tasks lists, which define functions that are run when you press a mouse button on a specific task. It appears that only =button1= is really usable on this machine, so one possible thing we can do is delete the other options.
+
+Of course, this is a great demonstration of lua's ability to place functions within tables, similar with how Python treats functions as well. Shame it's so damn verbose and ugly, with the function definitions being defined /within/ the behavioural definitions as well, which shouldn't really be happening. I think you could /really/ just separate the whole thing for cleaner, less klugey-looking code.
+
+#+begin_src lua
 mytasklist.buttons = awful.util.table.join(
                      awful.button({ }, 1, function (c)
                                               if c == client.focus then
@@ -300,7 +325,21 @@ mytasklist.buttons = awful.util.table.join(
                                               awful.client.focus.byidx(-1)
                                               if client.focus then client.focus:raise() end
                                           end))
+#+end_src
 
+******* FIX-ME Laying It All Together. 
+
+Of course, once you've done everything, it's time to lay everything out. We of course use a for loop to iterate to every screen (which you can count using the =screen.count()=  function).
+
+Interestingly enough, the layout box functions are defined on a per-screen basis, unlike the tasks lists or the tags lists. The colon notation seen in =mylayoutbox[s]:buttons...= is particularly interesting, since I have never seen it before and scarcely know what it means and why it's significant.
+
+I'm leery of splitting up the for loop to go through each individual piece, so until I find a better solution, this stays.
+
+One possible solution would be to put everything into a function, and every screen, just run that function. The function can just be annotated and split off into more sub-functions, since this section just sees so much repeated code, it's annoying.
+
+That might just be the next to-do.
+
+#+begin_src lua
 for s = 1, screen.count() do
     -- Create a promptbox for each screen
     mypromptbox[s] = awful.widget.prompt({ layout = awful.widget.layout.horizontal.leftright })
@@ -337,7 +376,6 @@ for s = 1, screen.count() do
         layout = awful.widget.layout.horizontal.rightleft
     }
 end
--- }}}
 #+end_src
 
 **** Input devices.
