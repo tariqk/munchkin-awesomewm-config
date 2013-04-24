@@ -15,7 +15,7 @@ This file was built using:
 - [[http://www.orgmode.org][org-mode]], using org-babel.
 - [[http://github.com/eschulte/emacs24-startup-kit][emacs-startup-kit]], Literate Programming edition.
 
-* PLAN-ME Things to do [0/4]
+* PLAN-ME Things to do [0/3]
 Items to plan for, items to complete.
 
 - [-] Orgify everything.
@@ -23,17 +23,24 @@ Items to plan for, items to complete.
   - [-] /Properly/ document the file, not mindlessly mimic the comments.
     - [X] First segment :: Variable declarations and initial setup and startup.
     - [ ] Second segment :: Widgets and menu items and interface items.
+  - [-] Figure out a workflow to output this as clean lua.
+    - [X] Configure the in-buffer settings to point to rc.lua
+    - [ ] Run the tangle command successfully.
+    - [ ] Test out the resulting awesome configuration.
+    - [ ] Start adding things in and reorganizing.
 - [ ] Put this in the org-agenda.
-- [-] Figure out a workflow to output this as clean lua.
-  - [X] Configure the in-buffer settings to point to rc.lua
-  - [ ] Run the tangle command successfully.
-  - [ ] Test out the resulting awesome configuration.
-  - [ ] Start adding things in and reorganizing.
 - [ ] Customize
   - Widgets
-    - System tray ones
-    - Desktop ones
+    - What do I need?
+      - Something to do with power.
+      - Something to do with connectivity.
+        - Look into running the wicd systray app in the background during startup.
   - Startup applications.
+  - Additional functionality
+    - Easy shutting down and restarting.
+    - Hotkeys for commonly used apps:
+      - Emacs
+      - uzbl-tabbed
   - Wallpaper changing, using either:
     - [[http://www.reddit.com/][reddit]]'s earth-porn subreddit.
     - [[http://www.panorimio.com][panorimio]], preferably with a separate file to describe rects of interest.
@@ -67,7 +74,7 @@ And then load external files needed to e.g. populate menu options etc.
 
 I believe at this point the debian menu entries are automatically generated, apparently, so there's really no point in including them here, since the system mirrors the changes from its own internal processes. 
 
-For more information, visit the [[file:/usr/share/doc/menu/html/index.html][relevant documentation on the local system]] for more info.
+For more information, visit the [[file:/usr/share/doc/menu/html/index.html][relevant documentation on this local system]] for more info.
 
 #+begin_src lua
   require("debian.menu")
@@ -91,6 +98,8 @@ The original docstring indicates that there is a fallback configuration that awe
 
 This snippet supposedly handles problems that occur when your configuration is correct, but awesome has encountered some run-time errors after starting up. The code for this one is even more esoteric, and I've yet to figure it out. From all I can see, it does something with signals, and then displays an error notification.
 
+This might actually be a do loop that runs endlessly, but that doesn't make any sense. I need to read up more on Lua's syntax and figure out what the =do...end= construct means, or if it's related to the previous snippet at all.
+
 #+begin_src lua
   do
       local in_error = false
@@ -109,7 +118,7 @@ This snippet supposedly handles problems that occur when your configuration is c
 
 *** Application startup.
 
-Applications that need to run, like the compositor and other shell background daemons, can be summoned here by `awful.util.spawn_with_shell()`.
+Applications that need to run, like the compositor and other shell background daemons, can be summoned here by =awful.util.spawn_with_shell()=.
 
 Right now, the following applications start up when awesome starts up:
 
@@ -119,7 +128,7 @@ Right now, the following applications start up when awesome starts up:
 awful.util.spawn_with_shell("unagi &")
 #+end_src
 
-*** COMMENT FINISH-ME Variable declarations.
+*** Variable declarations.
 
 Once that's done, define variables:
 
@@ -129,9 +138,9 @@ This bit defines the theme file for loading. Right now it's at zenburn. The thou
 beautiful.init("/usr/share/awesome/themes/zenburn/theme.lua")
 #+end_src
 
-The first two lines of this are self-evident: this is where we define my preferred xterm application (in this case, rxvt-unicode), and the default editor (likely nano; should really consider changing it to emacs). Right now it's just variables, but it will get called later on.
+The first two lines of this are self-evident: this is where we define my preferred xterm application (in this case, rxvt-unicode, or =urxvt=), and the default editor (it's =nano= -- typing =editor= on the console loads it up; should really consider changing it to =emacs=, although "EMACS ALL THE THINGS!!!1" is just silly and absurd, so have second thoughts on it). Right now it's just variables, but it will get called later on.
 
-That third line is a little mystifying, especially since I'm not familiar with the .. operator. Presumably it's string concatenation?
+That third line is a little mystifying, especially since I'm not familiar with the =..= operator. Presumably it's string concatenation? If that's the case, then it basically translates to =urxvt -e editor=.
 
 #+begin_src lua
 terminal = "urxvt"
@@ -141,7 +150,7 @@ editor_cmd = terminal .. " -e " .. editor
 
 This part defines modkey as the Windows key at this point. Like the previous section, it's still mostly variable assignments -- all the stuff gets run later on.
 
-The devs recommend you keep it to Mod4, by the way, and if it bugs you, use xmodmap, not manually define it here. There may be clashes and weirdness abound, presumably because awesome can't really figure out what CTRL + CTRL + key is. Not that I can blame them.
+The devs recommend you keep it to =Mod4= (i.e. the Windows key), by the way, and if it bugs you, use =xmodmap=, not manually define it here. There may be clashes and weirdness abound, presumably because awesome can't really figure out what CTRL + CTRL + key is. Not that I can blame them.
 
 #+begin_src lua
 modkey = "Mod4"
@@ -149,7 +158,7 @@ modkey = "Mod4"
 
 The table of layouts is laid-out. Remember that lua's numbering scheme for tables is 1s-based, not 0s-based, which will throw off people and result in a hilarious number of off-by-one errors.
 
-For netbooks with tiny screens like the device I'm writing in, stick to awful.layout.suit.max.
+For netbooks with tiny screens like the device I'm writing in, stick to =awful.layout.suit.max=.
 
 #+begin_src lua
 layouts =
@@ -169,11 +178,11 @@ layouts =
 }
 #+end_src
 
-Define tags here. You do it by continuously iterating from all active screens (assumption: screen.count() counts the number of iRL screens, not virual ones.
+Define tags here. You do it by continuously iterating from all active screens (assumption: =screen.count()= counts the number of iRL screens, not virtual desktops, which are tags are, I thought.
 
 I tried to follow the awesome Right Way™ of doing things, but it kept crashing my window manager. Might as well do it the dumb way, and define the tags manually, like an idiot. Works well, apparently, thus validating the need for idiocy, once in a while.
 
-layouts[9] should refer to awful.layout.suit.max. So it goes.
+=layouts[9]= should refer to =awful.layout.suit.max=. It's the default for all the tags, because, like I said; tiny netbook screen. This is acceptable now; for all you large-screen people, choose something else.
 
 #+begin_src lua
   tags = {}
@@ -187,39 +196,56 @@ layouts[9] should refer to awful.layout.suit.max. So it goes.
 
 **** The Launcher Widget and Main Menu
 
-#+begin_src lua
--- {{{ Menu
--- Create a laucher widget and a main menu
-myawesomemenu = {
-   { "manual", terminal .. " -e man awesome" },
-   { "edit config", editor_cmd .. " " .. awesome.conffile },
-   { "restart", awesome.restart },
-   { "quit", awesome.quit }
-}
+This first section just defines the awesome menu entries and places them in a table. You see this a lot in awesome, it appears -- define the elements in a variable, and then run them directly. Might wish to do that for the tags, once I can suss out how the exact details are.
 
+The commands are, to summarize:
+
+- manual :: loads, currently, =urxvt -e man awesome=. This loads rxvt-unicode with the awesome man page, and terminates the window after it's done.
+- edit config :: loads =urxvt -e terminal rc.lua=. =awesome.conffile= must be a built-in variable.
+- restart :: restarts the awesome window manager.
+- quit :: quits the awesome window manager and logs out.
+
+I don't honestly see the utility of using these commands, since they're fiddly.
+
+#+begin_src lua
+  myawesomemenu = {
+     { "manual", terminal .. " -e man awesome" },
+     { "edit config", editor_cmd .. " " .. awesome.conffile },
+     { "restart", awesome.restart },
+     { "quit", awesome.quit }
+  }
+#+end_src
+
+This one just wraps everything up in one big table, with the awesome menu, the Debian menu, and the open terminal menu option. Fairly standard, although the invocation to summon the Debian menu looks fairly clunky. =debian.menu.Debian_menu.Debian=? Yeesh.
+
+#+begin_src lua
 mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu, beautiful.awesome_icon },
                                     { "Debian", debian.menu.Debian_menu.Debian },
                                     { "open terminal", terminal }
                                   }
                         })
+#+end_src
 
+This presumably gets awesome to finally launch everything. Turns out that launchers are considered widgets in awesome. Since there is apparently no such thing as a built-in launcher, it makes sense to just create a launcher category widget and go from there.
+
+#+begin_src
 mylauncher = awful.widget.launcher({ image = image(beautiful.awesome_icon),
                                      menu = mymainmenu })
--- }}}
 #+end_src
 
 **** The wibox and system tray widgets
 
 ***** Widget definitions.
 
-First you define the widgets you desire:
+As seen so often in this configuration file, first you define your widget in a table, and then you summon it later. Saves on the messy coding, I suppose.
+
+You begin by defining the widgets you plan to place in the wibox, which is basically that bit that's on top of the screen, with the tags and the awesome "a" icon and so forth. Current wibox-widgets are:
+
+- a text clock :: from =awful.widget.textclock()=, this loads a text clock that aligns to the right of the wibox. Places it in =mytextclock=.
+- a system tray :: from... apparently the core awesome widget library? I don't recall seeing the widget defined in the earlier part of this config file. Defines a systray and places it in =mysystray=.
 
 #+begin_src lua
--- {{{ Wibox
--- Create a textclock widget
 mytextclock = awful.widget.textclock({ align = "right" })
-
--- Create a systray
 mysystray = widget({ type = "systray" })
 #+end_src
 
