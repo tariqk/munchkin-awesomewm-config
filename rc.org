@@ -393,30 +393,36 @@ This looks more than necessary and ripe for pruning.
 Actually, I think I could remove /everything/ and nothing of value could be lost. The awesome config has an allergy for defining actions for =button2=, though. Am I missing something?
 
 #+begin_src lua
--- {{{ Mouse bindings
 root.buttons(awful.util.table.join(
     awful.button({ }, 3, function () mymainmenu:toggle() end),
     awful.button({ }, 4, awful.tag.viewnext),
     awful.button({ }, 5, awful.tag.viewprev)
 ))
--- }}}
 #+end_src
 
 ***** FIX-ME Keyboard bindings
 
 ****** Global keys
 
-These keys, I believe, are universally applied across the awesome environment.
+When I discovered what was happening here, that was a little annoying.
 
-Quick glance -- they define:
+In any case, the following sections are a little different, in that we finally incorporate org-babel's [[http://orgmode.org/manual/Noweb-reference-syntax.html][org-babel's noweb reference syntax]]. We have to, because the =globalkeys= definitions is HUEG. On the plus side, once I've managed to get it working, I think we have a pretty powerful tool to dissect other, cumbersome but indivisible sections.
+
+Just so you know, the blocks that do refer to each segment are currently set with =:tangle no= options. That should prevent them from being written to the output file before they're ready.
+
+To reiterate: we'll talk about what the keys are specifically doing, and /then/ after all that we'll include the final code. That's how it goes.
+
+******* The focus keys
+
+The first set of keys
 
 - Movement between tags (=Mod4+left=, =Mod4+right=)
 - App focus (=Mod4+j=, =Mod4+k=)
 - Loading the awesome menu (=Mod4+w=). This also steals keyboard focus to the menu, which is more useful than annoying, especially since it removes the need to move your fingers off the keyboard.
 - Some kind of weird-ass mystery key (What does =Mod4+ESC= do? Look up that function, =awful.tag.history.restore=)
 
-#+begin_src lua
-  globalkeys = awful.util.table.join(
+#+name: focus-keys
+#+begin_src lua :tangle no
       awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
       awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
       awful.key({ modkey,           }, "Escape", awful.tag.history.restore),
@@ -434,13 +440,16 @@ Quick glance -- they define:
       awful.key({ modkey,           }, "w", function () mymainmenu:show({keygrabber=true}) end),
 #+end_src
 
+******* Layout Manipulation
+
 The layout manipulation keys. Quick glance, it basically does:
 
 - Focus-related stuff (=Mod4+CTRL+j= and =Mod4+CTRL+k=).
 - Layout-swapping stuff (=Mod4+Shift+j= and =Mod4+Shift+k=) -- useful if you have a large screen.
 - Some other focus-and-other stuff related things (look up what =awful.client.urgent.jumpto= does, and try out the =TAB= functionality)
 
-#+begin_src lua
+#+name: layout-manipulation
+#+begin_src lua :tangle no
       awful.key({ modkey, "Shift"   }, "j", function () awful.client.swap.byidx(  1)    end),
       awful.key({ modkey, "Shift"   }, "k", function () awful.client.swap.byidx( -1)    end),
       awful.key({ modkey, "Control" }, "j", function () awful.screen.focus_relative( 1) end),
@@ -455,11 +464,24 @@ The layout manipulation keys. Quick glance, it basically does:
           end),
 #+end_src lua
 
-#+begin_src lua 
+******* Standard Applications & Functionality
+
+The first section is sort of self-explanatory: keys for loading the terminal window, keys to restart and quit awesome. So far, so good.
+
+#+name: standard-actions
+#+begin_src lua :tangle no
       awful.key({ modkey,           }, "Return", function () awful.util.spawn(terminal) end),
       awful.key({ modkey, "Control" }, "r", awesome.restart),
       awful.key({ modkey, "Shift"   }, "q", awesome.quit),
   
+#+end_src
+
+These commands I'm not so sure. They use vim movement keys (=h j k l=), so presumably they have something to do with focus or layout manipulation. If so, I don't know how relevant they are to the interests of my tiny, tiny screen.
+
+=Mod4+SPACE= and =Mod4+Shift+SPACE= are familiar, though, although totally irrelevant to my tiny, tiny screen. Might serve useful in the event of me needing to use an attached screen.
+
+#+name: more-focus-keys
+#+begin_src lua :tangle no
       awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)    end),
       awful.key({ modkey,           }, "h",     function () awful.tag.incmwfact(-0.05)    end),
       awful.key({ modkey, "Shift"   }, "h",     function () awful.tag.incnmaster( 1)      end),
@@ -468,10 +490,19 @@ The layout manipulation keys. Quick glance, it basically does:
       awful.key({ modkey, "Control" }, "l",     function () awful.tag.incncol(-1)         end),
       awful.key({ modkey,           }, "space", function () awful.layout.inc(layouts,  1) end),
       awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(layouts, -1) end),
-  
+#+end_src
+
+This one restores minimized windows, that's for sure.
+
+#+name: restore-minimized-windows
+#+begin_src lua :tangle no
       awful.key({ modkey, "Control" }, "n", awful.client.restore),
-  
-      -- Prompt
+#+end_src
+
+Keys related to messing about with the prompt. =Mod4+r= to run stuff, =Mod4+x= to run lua code, presumably for debugging and development. The results are placed in the cache directory, under =history_eval=.
+
+#+name: prompt-keys
+#+begin_src lua :tangle no
       awful.key({ modkey },            "r",     function () mypromptbox[mouse.screen]:run() end),
   
       awful.key({ modkey }, "x",
@@ -481,8 +512,32 @@ The layout manipulation keys. Quick glance, it basically does:
                     awful.util.eval, nil,
                     awful.util.getdir("cache") .. "/history_eval")
                 end)
+#+end_src  
+
+******* Putting it all together.
+
+And now, the finale:
+
+#+begin_src lua
+    globalkeys = awful.util.table.join(
+    <<focus-keys>>
+    <<layout-manipulation>>
+    <<standard-actions>>
+    <<more-focus-keys>>
+    <<restore-minimized-windows>>
+    <<prompt-keys>>
   )
-  
+#+end_src
+
+Phew! Also, sheesh.
+
+****** Client-specific keys
+
+These are client (i.e. pertaining to the currently-running app) specific commands. Implementation is... interesting. 
+
+It's all stuffed into a table, which then gets referenced in the window-rules section (the empty rule, which applies to all windows).
+
+#+begin_src lua
   clientkeys = awful.util.table.join(
       awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
       awful.key({ modkey, "Shift"   }, "c",      function (c) c:kill()                         end),
@@ -503,7 +558,13 @@ The layout manipulation keys. Quick glance, it basically does:
               c.maximized_vertical   = not c.maximized_vertical
           end)
   )
-  
+#+end_src
+
+****** Getting tags to work properly on all keyboards
+
+This segment is particularly strange, but I think I understand why, even though I don't fully grok /how/ it's done. It's used to ensure that the commands work no matter what key layout you use. Check the comments; I'll be annotating this properly later.
+
+#+begin_src lua
   -- Compute the maximum number of digit we need, limited to 9
   keynumber = 0
   for s = 1, screen.count() do
@@ -559,29 +620,30 @@ root.keys(globalkeys)
 
 **** PLAN-ME Window rules
 
-Don't rightly understand this. Need to plan on commenting this properly.
++Don't rightly understand this. Need to plan on commenting this properly.+
+
+I get it now. =awful.rules.rules= is supposed to contain a series of entries, of which entry consists of a hash table with two properties: =rule= and =properties=. When rule is blank (as it is for =awful.rules.rules[1]=), then it applies to every window. Useful when you want to make sure the window matches the theme being used.
+
+Almost of the entries are for programs I don't really intend to use, though. Hmm. The Firefox one even /looks/ annoying.
 
 #+begin_src lua
--- {{{ Rules
-awful.rules.rules = {
-    -- All clients will match this rule.
-    { rule = { },
-      properties = { border_width = beautiful.border_width,
-                     border_color = beautiful.border_normal,
-                     focus = true,
-                     keys = clientkeys,
-                     buttons = clientbuttons } },
-    { rule = { class = "MPlayer" },
-      properties = { floating = true } },
-    { rule = { class = "pinentry" },
-      properties = { floating = true } },
-    { rule = { class = "gimp" },
-      properties = { floating = true } },
-    -- Set Firefox to always map on tags number 2 of screen 1.
-    -- { rule = { class = "Firefox" },
-    --   properties = { tag = tags[1][2] } },
-}
--- }}}
+  awful.rules.rules = {
+      { rule = { },
+        properties = { border_width = beautiful.border_width,
+                       border_color = beautiful.border_normal,
+                       focus = true,
+                       keys = clientkeys,
+                       buttons = clientbuttons } },
+      { rule = { class = "MPlayer" },
+        properties = { floating = true } },
+      { rule = { class = "pinentry" },
+        properties = { floating = true } },
+      { rule = { class = "gimp" },
+        properties = { floating = true } },
+      -- Set Firefox to always map on tags number 2 of screen 1.
+      -- { rule = { class = "Firefox" },
+      --   properties = { tag = tags[1][2] } },
+  }
 #+end_src
 
 **** FIX-ME Other things.
