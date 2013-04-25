@@ -344,6 +344,8 @@ I'm leery of splitting up the for loop to go through each individual piece, so u
 
 One possible solution would be to put everything into a function, and every screen, just run that function. The function can just be annotated and split off into more sub-functions, since this section just sees so much repeated code, it's annoying.
 
+Another alternative: use the =<<noweb-style-notation>>= to go through every bit, and then just reassemble them into one final piece near the end. For an idea what that would look like, take a look at the key definition bits below.
+
 That might just be the next to-do.
 
 #+begin_src lua
@@ -386,7 +388,6 @@ end
 #+end_src
 
 **** Input devices.
-
 ***** FIX-ME Mouse bindings
 
 This looks more than necessary and ripe for pruning.
@@ -402,7 +403,6 @@ root.buttons(awful.util.table.join(
 #+end_src
 
 ***** FIX-ME Keyboard bindings
-
 ****** Global keys
 
 When I discovered what was happening here, that was a little annoying.
@@ -474,7 +474,6 @@ The first section is sort of self-explanatory: keys for loading the terminal win
       awful.key({ modkey,           }, "Return", function () awful.util.spawn(terminal) end),
       awful.key({ modkey, "Control" }, "r", awesome.restart),
       awful.key({ modkey, "Shift"   }, "q", awesome.quit),
-  
 #+end_src
 
 These commands I'm not so sure. They use vim movement keys (=h j k l=), so presumably they have something to do with focus or layout manipulation. If so, I don't know how relevant they are to the interests of my tiny, tiny screen.
