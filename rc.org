@@ -23,6 +23,7 @@ Items to plan for, items to complete.
   - [-] /Properly/ document the file, not mindlessly mimic the comments.
     - [X] First segment :: Variable declarations and initial setup and startup.
     - [ ] Second segment :: Widgets and menu items and interface items.
+    - [ ] Mystery segment :: Not really. It's got something to do with code that loads every time a client loads, and something to do with "sloppy focus".
   - [-] Figure out a workflow to output this as clean lua.
     - [X] Configure the in-buffer settings to point to rc.lua
     - [ ] Run the tangle command successfully.

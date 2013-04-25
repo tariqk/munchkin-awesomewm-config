@@ -11,7 +11,9 @@ This machine's configuration
 
 - Debian Wheezy
 - Emacs, installed from `the emacs-snapshot packages`_
+
   + Emacs has, of course, `org-mode`_ built-in.
+
 - The `Literate Programming fork of the emacs-starter-kit`_
 - The `awesome window manager`, ver. 3.4.13 (Octopus)
 
